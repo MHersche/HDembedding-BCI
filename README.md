@@ -15,8 +15,8 @@ Then, download the dataset "Four class motor imagery (001-2014)" of the [BCI com
 
 The packages can be installed easily with conda and the _config.yml file: 
 ```
-$ conda env create -f _config.yml -n msenv
-$ source activate msenv 
+$ conda env create -f _config.yml -n HDenv
+$ source activate HDenv 
 ```
 ### Recreate results
 For recreation of classification accuracy run the main file 
