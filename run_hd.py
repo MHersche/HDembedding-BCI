@@ -12,7 +12,7 @@ from main_hd import Hd_model
 
 DATA_PATH = './dataset/'
 SAVE_PATH = './results/'
-DATASET = "IV2a" # {IV2a,EPFL}
+DATASET = "IV2a" # {IV2a,3classMI}
 CROSSVAL = False
 CLASSIFIER = 'assotiative'# {'assotiative', 'kmeans'}
 # number of centroids if kmeans classifier 
@@ -47,15 +47,14 @@ if DATASET == "IV2a":
 	f_band = [np.arange(43)] # use all 43 frequency bands with BW 2,4,8,16,32 Hz
 	time_windows = [np.array([[2.5,6]])] 
 
-elif DATASET =='EPFL': 
-	DATA_PATH = DATA_PATH + 'EPFL/'
-	SAVE_PATH = SAVE_PATH + 'EPFL/'
+elif DATASET =='3classMI': 
+	DATA_PATH = DATA_PATH + '3classMI/'
+	SAVE_PATH = SAVE_PATH + '3classMI/'
 
 	f_band = [np.arange(13)] # 2 Hz bands 4-30 Hz 
 	time_windows = [np.array([[0,4]])]
 	N_feat_per_band = {'single':1768,'spat':136}
 
-	raise ValueError('EPFL dataset not provided!') 
 
 ############################################################
 

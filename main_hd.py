@@ -33,7 +33,7 @@ class Hd_model:
 
 	def __init__(self,data_set,data_path,crossval = False,classifier = 'assotiative',cuda_device = 'cuda:0'):		
 		
-		if data_set =="EPFL":
+		if data_set =="3classMI":
 			self.load_feature = load_feature_EPFL
 			self.crossval = True # only xval in EPFL dataset 
 			self.NO_subjects = 5

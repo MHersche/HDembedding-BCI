@@ -12,11 +12,11 @@ import scipy.io as sio
 
 
 __author__ = "Michael Hersche"
-__email__ = "herschmi@ethz.ch,tinor@ethz.ch"
+__email__ = "herschmi@ethz.ch"
 
 N_CHANNELS = 16
 
-offline_subject_folder = {1:'Offline/q1_20140311/',  2:'Offline/r8_20140818/',3:'Offline/s5_20140905/',4:'Offline/x3_20150505/',5:'Offline/u9_20150305/',6:'Offline/q5_20140520/'}
+offline_subject_folder = {1:'/S1/',  2:'/S2/',3:'/S3/',4:'/S4/',5:'/S5/'}
 
 
 TRIALS_SESSION = 45 # number of trials per session
