@@ -1,9 +1,14 @@
 # Exploring Embedding Methods in Binary Hyperdimensional Computing: A Case Study for Motor-Imagery based Brain–Computer Interfaces
 
+Works that make use of this code should cite this [work](https://arxiv.org/abs/1812.05705). 
+
 ## Getting Started
 
 First, download the source code.
-Then, download the dataset "Four class motor imagery (001-2014)" of the [BCI competition IV-2a](http://bnci-horizon-2020.eu/database/data-sets). Put all files of the dataset (A01T.mat-A09E.mat) into a subfolder within the project called 'dataset/IV2a' or change DATA_PATH in run_hd.py
+It is possible to use two different MI datsets, namely the f4-class BCI competition IV2a dataset and a new 3-class data set ,which is made publicly available in this project.
+The 3-class dataset is stored in 'dataset/3classMI' and can be downloaded together with the source code. 
+When using the 3-class dataset please cite [Saeedi et. al. 2016](https://ieeexplore.ieee.org/abstract/document/7379099). 
+For the 4-class dataset, download the dataset "Four class motor imagery (001-2014)" of the [BCI competition IV-2a](http://bnci-horizon-2020.eu/database/data-sets). Put all files of the dataset (A01T.mat-A09E.mat) into a subfolder within the project called 'dataset/IV2a' or change DATA_PATH in run_hd.py
 ### Prerequisites
 
 - python3.6
