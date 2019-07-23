@@ -66,7 +66,7 @@ def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encodin
 		test_feat = test_feat[np.ix_(np.arange(N_test_trial),twind_sel,band_sel)].reshape(N_test_trial,N_twind,N_bands,NO_riem)
 
 	else: 
-		print('Generate new set of features')
+		#print('Generate new set of features')
 		train_feat,train_label,test_feat,test_label = generate_Riemann_feat(data_path,subject,twind_sel ,band_sel,feat_type,split)	
 		twind_sel = np.arange(twind_sel.shape[0])
 

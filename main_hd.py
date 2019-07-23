@@ -10,10 +10,13 @@ import time, sys
 import sys, os
 sys.path.append('./data_utils/')
 sys.path.append('./hd_utils/')
+sys.path.append('./baseline_utils/')
 
-from sklearn.svm import LinearSVC,SVC
+
 from sklearn.model_selection import KFold
-
+#from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from lda_multires import lda_multires
+from svm_multires import svm_multires
 
 # import self defined functions 
 from load_feature_IV2a import load_feature_IV2a,load_XVAL_feature_IV2a
@@ -31,7 +34,7 @@ __email__ = "herschmi@ethz.ch"
 
 class Hd_model:
 
-	def __init__(self,data_set,data_path,crossval = False,classifier = 'assotiative',cuda_device = 'cuda:0'):		
+	def __init__(self,data_set,data_path,crossval = False,classifier = 'assotiative',cuda_device = 'cuda:0',lda_svm_precision=64):		
 		
 		if data_set =="3classMI":
 			self.load_feature = load_feature_EPFL
@@ -69,6 +72,8 @@ class Hd_model:
 		elif classifier == 'kmeans':
 			self.hd_classifier = hd_kmeans_classifier
 		self.classifier = classifier
+
+		self.lda_svm_precision = lda_svm_precision
 	
 		
 		################## Default settings ##################################
@@ -95,35 +100,43 @@ class Hd_model:
 			self.subject, self.t_vec, self.f_band,self.feat_type, self.encoding, fold,self.NO_folds)
 
 		# init SVM for comparison 
-		clf = LinearSVC(C = self.svm_c, 
-			intercept_scaling=1, loss='hinge', max_iter=1000,multi_class='ovr', penalty='l2', random_state=1, tol=0.00001)
+		clf_SVM = svm_multires(C = self.svm_c, intercept_scaling=1, loss='hinge', max_iter=1000,
+			multi_class='ovr', penalty='l2', random_state=1, tol=0.00001,precision=self.lda_svm_precision)
+
+		clf_LDA = lda_multires(solver='lsqr',shrinkage='auto',precision=self.lda_svm_precision)
 
 		# init HD classifier  
-		hd_b = self.hd_classifier(self.N_feat_per_band , 
-			self.N_bands,self.HD_dim,self.d,self.encoding, 
-			self.code, self.sparsity, self.learning,self.n_classes,self.cuda_device,self.k)
+		#hd_b = self.hd_classifier(self.N_feat_per_band , 
+		#	self.N_bands,self.HD_dim,self.d,self.encoding, 
+		#	self.code, self.sparsity, self.learning,self.n_classes,self.cuda_device,self.k)
 
 
-		suc =  np.zeros(3)
+		suc =  np.zeros(4)
 		
 		################################# Training ###################################################
 		# SVM 
-		clf.fit(svm_train_feat,train_label)
+		clf_SVM.fit(svm_train_feat,train_label)
+
+		# LDA 
+		clf_LDA.fit(svm_train_feat,train_label)
+
 		# HD
-		hd_b.fit(train_feat,train_label)
+		#hd_b.fit(train_feat,train_label)
 	
 		################################# Evaluation ###################################################
 		# success on svm 
-		suc[0] = clf.score(svm_eval_feat,eval_label)
+		suc[0] = clf_SVM.score(svm_eval_feat,eval_label)
+
+		suc[1] = clf_LDA.score(svm_eval_feat,eval_label)
 
 		# HD success on all eval data 
-		suc[1,] =hd_b.score(eval_feat,eval_label)
+		#suc[2,] =hd_b.score(eval_feat,eval_label)
 
 		# HD success on training data 
-		suc[2] =hd_b.score(train_feat,train_label)
+		#suc[3] =hd_b.score(train_feat,train_label)
 
-		del hd_b
-		torch.cuda.empty_cache()
+		#del hd_b
+		#torch.cuda.empty_cache()
 
 		return suc
 		
@@ -153,9 +166,9 @@ class Hd_model:
 		print("Learning with : "+ self.learning)
 		
 
-		success = np.zeros((self.NO_subjects,self.NO_folds,3))
+		success = np.zeros((self.NO_subjects,self.NO_folds,4))
 
-		print("\t SVM\tHD\tHD training")
+		print(";\t ;SVM \t ;LDA \t;HD\t;HD training")
 		# Go through all subjects 
 		for self.subject in range(1,self.NO_subjects+1):
 			
@@ -164,12 +177,12 @@ class Hd_model:
 
 			mean_suc = np.mean(success[self.subject-1],axis = 0)
 
-			print("Subject{:} {:0.4f}\t{:0.4f}\t{:0.4f}".format(self.subject,mean_suc[0],mean_suc[1],mean_suc[2]))
+			print("Subject{:}; {:0.4f};\t{:0.4f};\t{:0.4f};\t{:0.4f}".format(self.subject,mean_suc[0],mean_suc[1],mean_suc[2],mean_suc[3]))
 
 		# calculate average accuracies 
 		avg_succ = success.mean(axis = (0,1))
 
-		print("AVG: \t {:0.4f} \t {:0.4f} \t {:0.4f}".format(mean_suc[0],mean_suc[1],mean_suc[2]))
+		print("AVG:;\t {:0.4f}; \t {:0.4f}; \t {:0.4f};\t{:0.4f}".format(avg_succ[0],avg_succ[1],avg_succ[2],avg_succ[3]))
 
 		# save data 
 		np.savez(self.save_path,success = success,N_feat_per_band = self.N_feat_per_band,

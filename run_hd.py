@@ -18,7 +18,7 @@ CLASSIFIER = 'assotiative'# {'assotiative', 'kmeans'}
 # number of centroids if kmeans classifier 
 k = [1]
 # GPU device, if not supported takes automaically cpu 
-CUDA_DEVICE = 'cuda:1' # 
+CUDA_DEVICE = 'cuda:0' # 
 # Feature 
 feat_type = ['Riemann']# {"Riemann","Riemann_Euclid","Whitened_Euclid","CSP"}
 # HD embedding 
@@ -33,6 +33,9 @@ d=[21]
 sparsity = [0.9]#
 encoding = ['spat'] #{'spat','single'}
 learning = ['average'] # {'SVM','average'}
+
+# LDA 
+lda_svm_precision = 16
 
 
 if DATASET == "IV2a":
@@ -58,14 +61,14 @@ elif DATASET =='3classMI':
 
 ############################################################
 
-model = Hd_model(DATASET,DATA_PATH,CROSSVAL,CLASSIFIER,CUDA_DEVICE)
+model = Hd_model(DATASET,DATA_PATH,CROSSVAL,CLASSIFIER,CUDA_DEVICE,lda_svm_precision=lda_svm_precision)
 
 test_iter_vec = np.arange(1)
 
 for test_iter in test_iter_vec:
 	
 	print('Test iteration number {}'.format(test_iter))
-	result_nr = test_iter*100  +1000
+	result_nr = test_iter
 	print(result_nr)
 
 	for model.learning in learning:
