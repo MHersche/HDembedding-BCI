@@ -55,8 +55,9 @@ class lda_multires(LinearDiscriminantAnalysis):
 
 
 		coef = self.coef_.astype(self._dtype)
+		intercept = self.intercept_.astype(self._dtype)
 		X = X.astype(self._dtype)
-		est = np.matmul(X,np.transpose(coef,(1,0)))
+		est = np.matmul(X,np.transpose(coef,(1,0)))+intercept
 
 		return np.argmax(est,axis=1)+1
 

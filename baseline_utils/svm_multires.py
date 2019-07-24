@@ -27,7 +27,8 @@ class svm_multires(LinearSVC):
 
 
 		if precision==64: # use standard 
-			self.score=super().score
+			self.score = self._quantscore
+			self._dtype = np.float64
 		elif precision == 32: 
 			self.score = self._quantscore
 			self._dtype = np.float32
@@ -53,10 +54,10 @@ class svm_multires(LinearSVC):
 
 	def _quantpredict(self,X):
 
-
 		coef = self.coef_.astype(self._dtype)
+		intercept = self.intercept_.astype(self._dtype)
 		X = X.astype(self._dtype)
-		est = np.matmul(X,np.transpose(coef,(1,0)))
+		est = np.matmul(X,np.transpose(coef,(1,0)))+intercept
 
 		return np.argmax(est,axis=1)+1
 
