@@ -20,7 +20,7 @@ __email__ = "herschmi@ethz.ch"
 
 
 
-def load_feature_IV2a(data_path,subject, twind_sel=[],band_sel=[],feat_type='Riemann', encoding='spat', split = 0, nsplits = 4):
+def load_feature_IV2a(data_path,subject, twind_sel,band_sel,feat_type='Riemann', encoding='spat', split = 0, nsplits = 4,save_features=False,load_features=False):
 	'''	returns features and labels of training and test set 
 
 	Keyword arguments:
@@ -38,55 +38,51 @@ def load_feature_IV2a(data_path,subject, twind_sel=[],band_sel=[],feat_type='Rie
 	Return:	train_feat -- numpy array with dimension [trial, temp_wind, bands, CSP/R dim ]
 			train_label -- numpy array with entries [1,2,3,4]
 
-			eval_feat -- numpy array with dimension [trial, temp_wind, bands, CSP/R dim ]
-			eval_label -- numpy array with entries [1,2,3,4]
+			test_feat -- numpy array with dimension [trial, temp_wind, bands, CSP/R dim ]
+			test_label -- numpy array with entries [1,2,3,4]
 
 	'''
 
-	if twind_sel.ndim == 1: 
+	sub_path =  'S'+str(subject)+feat_type
+	path = data_path + sub_path 
+
+	if load_features: 
 		#print("Load precalculated features")
-		sub_path = 'S' + str(subject) + '.npy.npz'
+		sub_path = 'S' + str(subject) + '.npz'
+		#print("Load precalculated features")
 
-		if feat_type == 'CSP':
-			path = data_path + 'csp_feat/' + sub_path
-		elif feat_type == 'Riemann': 
-			path = data_path + 'riem_cov_mat/' + sub_path
-
-		#print(path)
-
-		with np.load(path) as data:
-			train_feat = data['train_feature']
+		with np.load(path+ '.npz') as data:
+			train_feat = data['train_feat']
 			train_label = data['train_label'].astype(int) 
-			eval_feat = data['eval_feature']
-			eval_label = data['eval_label'].astype(int)
+			test_feat = data['test_feat']
+			test_label = data['test_label'].astype(int)
 
-		# get dimensions
 		N_tr_trial = train_feat.shape[0] 
-		N_ev_trial = eval_feat.shape[0]
+		N_test_trial = test_feat.shape[0]
 		N_bands = len(band_sel)
 		N_twind = len(twind_sel)
 
 		# If Riemannian features, apply halfvectorization to covariance matrices 
 		if feat_type == 'CSP':	
 			train_feat = train_feat[np.ix_(np.arange(N_tr_trial),twind_sel,band_sel)].reshape(N_tr_trial,N_twind,N_bands,24)
-			eval_feat = eval_feat[np.ix_(np.arange(N_ev_trial),twind_sel,band_sel)].reshape(N_ev_trial,N_twind,N_bands,24)
+			test_feat = test_feat[np.ix_(np.arange(N_ev_trial),twind_sel,band_sel)].reshape(N_ev_trial,N_twind,N_bands,24)
 			N_feat = 24
 		else: 
 			# select necessairy bands and twindows
-			train_feat = train_feat[np.ix_(np.arange(N_tr_trial),twind_sel,band_sel)].reshape(N_tr_trial,N_twind,N_bands,22,22)
-			eval_feat = eval_feat[np.ix_(np.arange(N_ev_trial),twind_sel,band_sel)].reshape(N_ev_trial,N_twind,N_bands,22,22)
+			#train_feat = train_feat[np.ix_(np.arange(N_tr_trial),twind_sel,band_sel)].reshape(N_tr_trial,N_twind,N_bands,22,22)
+			#test_feat = test_feat[np.ix_(np.arange(N_ev_trial),twind_sel,band_sel)].reshape(N_ev_trial,N_twind,N_bands,22,22)
 			# transform covmat to vector
-			train_feat, eval_feat = transform_covmat(train_feat,eval_feat)
+			#train_feat, test_feat = transform_covmat(train_feat,test_feat)
 			N_feat = 253
 
 
 	else: # generate new features 
-		#print('Generate new set of features')
+		print('Generate new set of features')
 		if feat_type == 'CSP': 
-			train_feat,train_label,eval_feat,eval_label = generate_CSP_feat(data_path,subject,twind_sel ,band_sel,feat_type)
+			train_feat,train_label,test_feat,test_label = generate_CSP_feat(data_path,subject,twind_sel ,band_sel,feat_type)
 			N_feat = 24
 		elif feat_type == 'Riemann': 
-			train_feat,train_label,eval_feat,eval_label = generate_Riemann_feat(data_path,subject,twind_sel ,band_sel,feat_type)
+			train_feat,train_label,test_feat,test_label = generate_Riemann_feat(data_path,subject,twind_sel ,band_sel,feat_type)
 			# N_feat = 253
 		else: 
 			print("invalid feature type")
@@ -96,10 +92,12 @@ def load_feature_IV2a(data_path,subject, twind_sel=[],band_sel=[],feat_type='Rie
 
 	# get dimensions
 	N_tr_trial = train_feat.shape[0] 
-	N_ev_trial = eval_feat.shape[0]
+	N_ev_trial = test_feat.shape[0]
 	N_bands = len(band_sel)
 	N_twind = len(twind_sel)
 	
+	if save_features:
+		np.savez(path,train_feat = train_feat,train_label = train_label,test_feat = test_feat, test_label=test_label)	
 
 	# Normalization of data
 	# sigma = np.reshape(np.std(train_feat,axis = 0),(1, N_twind, N_bands,N_feat))
@@ -108,27 +106,27 @@ def load_feature_IV2a(data_path,subject, twind_sel=[],band_sel=[],feat_type='Rie
 	# mean = np.reshape(np.mean(train_feat,axis = 0),(1, N_twind, N_bands,N_feat))
 	
 	# train_feat = (train_feat - mean)/sigma
-	# eval_feat = (eval_feat - mean)/sigma
+	# test_feat = (test_feat - mean)/sigma
 
 	# reshape of features 
 	if encoding == 'single':
 
 		train_feat = np.reshape(np.transpose(train_feat,(0,2,1,3)),(N_tr_trial,1,-1))
-		eval_feat = np.reshape(np.transpose(eval_feat,(0,2,1,3)),(N_ev_trial,1,-1))
+		test_feat = np.reshape(np.transpose(test_feat,(0,2,1,3)),(N_ev_trial,1,-1))
 		# reshape features for svm 
 		svm_train_feat = np.reshape(train_feat,(N_tr_trial,-1))
-		svm_eval_feat = np.reshape(eval_feat,(N_ev_trial,-1))
+		svm_test_feat = np.reshape(test_feat,(N_ev_trial,-1))
 
-	elif encoding == 'spat':
+	elif encoding == 'spat' or encoding =='spat_bind':
 		# no fisher scoring , just take twind_sel and reshape to 
 		train_feat = np.reshape(np.transpose(train_feat,(0,2,1,3)),(N_tr_trial,1,N_bands,-1))
-		eval_feat = np.reshape(np.transpose(eval_feat,(0,2,1,3)),(N_ev_trial,1,N_bands,-1))
+		test_feat = np.reshape(np.transpose(test_feat,(0,2,1,3)),(N_ev_trial,1,N_bands,-1))
 		# reshape features for svm 
 		svm_train_feat = np.reshape(train_feat,(N_tr_trial,-1))
-		svm_eval_feat = np.reshape(eval_feat,(N_ev_trial,-1))
+		svm_test_feat = np.reshape(test_feat,(N_ev_trial,-1))
 
 
-	return train_feat,svm_train_feat, train_label, eval_feat,svm_eval_feat, eval_label
+	return train_feat,svm_train_feat, train_label, test_feat,svm_test_feat, test_label
 
 
 def load_XVAL_feature_IV2a(subject, twind_sel=[],band_sel=[],feat_type='Riemann', encoding='spat',split = 0, n_splits = 4):
@@ -141,24 +139,24 @@ def load_XVAL_feature_IV2a(subject, twind_sel=[],band_sel=[],feat_type='Riemann'
 	for train_index, test_index in kf.split(svm_feat):
 		
 		if split_cnt == split:
-			eval_feat = feat[test_index]
-			eval_label = label[test_index]
+			test_feat = feat[test_index]
+			test_label = label[test_index]
 			train_feat = feat[train_index]
 			train_label = label[train_index]
 			svm_train_feat = svm_feat[train_index]
-			svm_eval_feat = svm_feat[test_index]
+			svm_test_feat = svm_feat[test_index]
 		split_cnt += 1 
 		
-	return train_feat, svm_train_feat,train_label, eval_feat, svm_eval_feat,eval_label
+	return train_feat, svm_train_feat,train_label, test_feat, svm_test_feat,test_label
 
 
 
-def transform_covmat(train_feat,eval_feat):
+def transform_covmat(train_feat,test_feat):
 	'''	transform covariance matrices to vectors for every band and temp window and trial
 	'''
 	
 	N_tr_trial, N_twind, N_bands,N_channel,_ = train_feat.shape 
-	N_ev_trial = eval_feat[:,0,0,0,0].size
+	N_ev_trial = test_feat[:,0,0,0,0].size
 	N_Rfeat = int(N_channel*(N_channel+1)/2)
 
 
@@ -171,15 +169,15 @@ def transform_covmat(train_feat,eval_feat):
 				out_tr_feat[trial,twind,band] = half_vectorization(train_feat[trial,twind,band])
 
 	
-	out_eval_feat = np.zeros((N_ev_trial,N_twind,N_bands,N_Rfeat))
+	out_test_feat = np.zeros((N_ev_trial,N_twind,N_bands,N_Rfeat))
 
 	# half vectorization evval features 
 	for trial in range(N_ev_trial):
 		for twind in range(N_twind):
 			for band in range(N_bands): 
-				out_eval_feat[trial,twind,band] = half_vectorization(eval_feat[trial,twind,band])
+				out_test_feat[trial,twind,band] = half_vectorization(test_feat[trial,twind,band])
 
-	return out_tr_feat,out_eval_feat
+	return out_tr_feat,out_test_feat
 
 	
 

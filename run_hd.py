@@ -35,7 +35,7 @@ encoding = ['spat'] #{'spat','single'}
 learning = ['average'] # {'SVM','average'}
 
 # LDA 
-lda_svm_precision = 16
+lda_svm_precision = 32
 
 
 if DATASET == "IV2a":

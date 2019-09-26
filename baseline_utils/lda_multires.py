@@ -27,16 +27,39 @@ class lda_multires(LinearDiscriminantAnalysis):
 
 
 		if precision==64: # use standard 
-			self.score=super().score
+			self.score = self._quantscore
+			self._dtype = np.float64
+			self.predict= self._quantpredict
 		elif precision == 32: 
 			self.score = self._quantscore
+			self.predict= self._quantpredict
 			self._dtype = np.float32
 		elif precision ==16: 
 			self.score = self._quantscore
+			self.predict= self._quantpredict
 			self._dtype = np.float16
-		else :
+		elif precision ==2:
+			self.score = self._biscore
+			self.predict= self._bipredict
+		else:
 			raise ValueError('LDA invalid precision') 
-			
+	
+
+	def _biscore(self,X,y,sample_weight = None):
+		y_hat = self._bipredict(X)
+		n_samples = y.shape
+		score = np.sum(y_hat==y)/n_samples
+		
+		return score
+
+	def _bipredict(self,X): 
+
+		X = np.sign(X)
+		coef = np.sign(self.coef_)
+		#intercept = self.intercept_.astype(self._dtype)
+		est = np.matmul(X,np.transpose(coef,(1,0)))
+
+		return np.argmax(est,axis=1)+1	
 
 
 	def _quantscore(self,X,y,sample_weight=None):

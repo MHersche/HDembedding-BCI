@@ -19,7 +19,7 @@ __author__ = "Michael Hersche"
 __email__ = "herschmi@ethz.ch"
 
 
-def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encoding, split=0,n_splits = 0):
+def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encoding, split=0,n_splits = 0,save_features=False,load_features=False):
 	'''	returns features and labels of training and test set 
 
 	Keyword arguments:
@@ -39,21 +39,17 @@ def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encodin
 	'''
 	NO_channels = 16 # number of EEG channels 
 	NO_subjects = 5
-	NO_riem = int(NO_channels*(NO_channels+1)/2) # Total number of CSP feature per band and timewindow
+	NO_riem = int(NO_channels*(NO_channels+1)/2) # Total number of Riemannian feature per band and timewindow
 
-	if twind_sel.ndim ==1: 
-		print("Load precalculated features")
-		sub_path =  str(subject) + '_' + str(split) + '.npy.npz'
-
-		if feat_type == 'Riemann': 
-			path = data_path + sub_path 
-		else: 
-			raise ValueError('No precalculated features for type: ' +feat_type) 
-
-		with np.load(path) as data:
-			train_feat = data['train_feature']
+	sub_path =  '/S'+str(subject)+'/large' +feat_type  + str(split) 
+	path = data_path + sub_path 
+	
+	if load_features: 
+		#print("Load precalculated features")
+		with np.load(path+ '.npz') as data:
+			train_feat = data['train_feat']
 			train_label = data['train_label'].astype(int) 
-			test_feat = data['test_feature']
+			test_feat = data['test_feat']
 			test_label = data['test_label'].astype(int)
 
 		N_tr_trial = train_feat.shape[0] 
@@ -62,11 +58,11 @@ def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encodin
 		N_twind = len(twind_sel)
 
 		# select necessairy bands and twindows
-		train_feat = train_feat[np.ix_(np.arange(N_tr_trial),twind_sel,band_sel)].reshape(N_tr_trial,N_twind,N_bands,NO_riem)
-		test_feat = test_feat[np.ix_(np.arange(N_test_trial),twind_sel,band_sel)].reshape(N_test_trial,N_twind,N_bands,NO_riem)
+		#train_feat = train_feat[np.ix_(np.arange(N_tr_trial),twind_sel,band_sel)].reshape(N_tr_trial,N_twind,N_bands,NO_riem)
+		#test_feat = test_feat[np.ix_(np.arange(N_test_trial),twind_sel,band_sel)].reshape(N_test_trial,N_twind,N_bands,NO_riem)
 
 	else: 
-		#print('Generate new set of features')
+		print('Generate new set of features')
 		train_feat,train_label,test_feat,test_label = generate_Riemann_feat(data_path,subject,twind_sel ,band_sel,feat_type,split)	
 		twind_sel = np.arange(twind_sel.shape[0])
 
@@ -76,18 +72,25 @@ def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encodin
 	N_bands = len(band_sel)
 	N_twind = len(twind_sel)
 
+
+	if save_features:
+		np.savez(path,train_feat = train_feat,train_label = train_label,test_feat = test_feat, test_label=test_label)
+
 	if encoding == 'single':
 		train_feat = np.reshape(train_feat,(N_tr_trial,N_twind,-1) )
 		svm_train_feat = np.reshape(train_feat,(N_tr_trial,-1))
 		test_feat = np.reshape(test_feat,(N_test_trial,N_twind,-1))
 		svm_test_feat = np.reshape(test_feat,(N_test_trial,-1))
 
-	elif encoding == 'spat':
+	elif encoding == 'spat' or encoding =='spat_bind':
 		train_feat = np.reshape(np.transpose(train_feat,(0,2,1,3)),(N_tr_trial,1,N_bands,-1))
 		test_feat = np.reshape(np.transpose(test_feat,(0,2,1,3)),(N_test_trial,1,N_bands,-1))
 		# reshape features for svm 
 		svm_train_feat = np.reshape(train_feat,(N_tr_trial,-1))
 		svm_test_feat = np.reshape(test_feat,(N_test_trial,-1))
+
+	
+
 
 	return train_feat,svm_train_feat, train_label, test_feat,svm_test_feat, test_label
 
@@ -102,7 +105,7 @@ def generate_Riemann_feat(data_path,subject,twind_sel,band_sel,riem_settings,fol
 	bw = np.array([2,4,8,16,32]) # bandwidth of filtered signals 
 	ftype = 'butter' # 'fir', 'butter'
 	forder= 1 # 4
-	filter_bank = load_filterbank(bw,fs,order=forder,max_freq=40,ftype = ftype) # get filterbank coeffs 
+	filter_bank = load_filterbank(bw,fs,order=forder,max_freq=30,ftype = ftype) # get filterbank coeffs 
 	
 	time_windows = (twind_sel*fs).astype(int)
 
