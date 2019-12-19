@@ -63,9 +63,24 @@ class lsh:
 			actual_sparsity = (proj_mat_cpu ==0).mean()
 			self.proj_mat = torch.from_numpy(proj_mat_cpu).float().to(self.device)
 		
-			print("Actual Sparsity: " + str(actual_sparsity))
+		elif code == 'random_proj_bp_sep':
 
-		elif code == 'learn_HD_proj_ls' or code == 'learn_HD_proj_SGD': 
+			self.encode = self.encode_proj_sep
+			self.HD_dim = HD_dim
+			n_bands = 43
+			
+			proj_mat_cpu = np.zeros((43,HD_dim,NO_feat))
+			for band in range(n_bands):
+				proj_mat_cpu[band] = SparseRandomProjection(HD_dim,density=1-sparsity).fit(np.zeros((1,NO_feat))).components_.todense()
+			
+			proj_mat_cpu[proj_mat_cpu >0] = 1
+			proj_mat_cpu[proj_mat_cpu <0] = -1
+			actual_sparsity = (proj_mat_cpu ==0).mean()
+			self.proj_mat = torch.from_numpy(proj_mat_cpu).float().to(self.device)
+		
+			#print("Actual Sparsity: " + str(actual_sparsity))
+
+		elif code == 'learn_HD_proj_ls' or code == 'learn_HD_proj_SGD' or code == 'learn_HD_proj_unsup': 
 			# projection matrix is learned later on during training 
 			self.HD_dim = HD_dim 
 			self.encode = self.encode_proj
@@ -109,7 +124,7 @@ class lsh:
 		self.training_done = True
 		#return 
 
-	def encode_quant(self, sample):	
+	def encode_quant(self, sample,band=0):	
 		'''	feature by quantization (thermometer or grey)
 		Parameters: 
 		----------
@@ -141,7 +156,7 @@ class lsh:
 		return out_vec
 		
 
-	def encode_proj(self,sample): 
+	def encode_proj(self,sample,band=0): 
 		'''	feature transformation by binary projection (random or learned)
 		Parameters: 
 		----------
@@ -168,7 +183,34 @@ class lsh:
 
 		return out_vec
 
-	def encode_multi(self, samples): 
+	def encode_proj_sep(self,sample,band=0): 
+		'''	feature transformation by binary projection (random or learned)
+		Parameters: 
+		----------
+		sample: feature sample, numpy array shape (N_feat,) 
+		
+		Return:  
+		----------
+		out_vec: binary HD sample, torch Tensor int16 (HD_dim,)
+		'''	
+		# move sample to GPU 
+		sigma = np.std(sample)
+		mean = np.mean(sample)
+
+		sample = (sample-mean)/sigma
+
+		#import pdb
+		#pdb.set_trace()
+
+		cuda_sample = torch.from_numpy(sample).float().to(self.device)
+		# projection 
+		proj_vec = torch.matmul(self.proj_mat[band],cuda_sample)
+		# binariyation based on sign 
+		out_vec = (proj_vec >= 0).short() 
+
+		return out_vec
+
+	def encode_multi(self, samples,band=0): 
 		'''	encode multiple sampeles
 		Parameters: 
 		----------

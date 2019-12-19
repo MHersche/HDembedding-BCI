@@ -41,7 +41,7 @@ def load_feature_EPFL(data_path, subject, twind_sel,band_sel, feat_type, encodin
 	NO_subjects = 5
 	NO_riem = int(NO_channels*(NO_channels+1)/2) # Total number of Riemannian feature per band and timewindow
 
-	sub_path =  '/S'+str(subject)+'/large' +feat_type  + str(split) 
+	sub_path =  '/S'+str(subject)+'/' +feat_type  + str(split) 
 	path = data_path + sub_path 
 	
 	if load_features: 

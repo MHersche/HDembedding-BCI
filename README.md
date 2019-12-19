@@ -1,6 +1,10 @@
 # Exploring Embedding Methods in Binary Hyperdimensional Computing: A Case Study for Motor-Imagery based Brain–Computer Interfaces
 
-Works that make use of this code should cite this [work](https://arxiv.org/abs/1812.05705). 
+If this code proves useful for your research, please cite
+> Michael Hersche, Luca Benini, Abbas Rahimi, "Binary Models for Motor-Imagery Brain–Computer Interfaces: Sparse Random Projection and Binarized SVM", in 2020 IEEE International Conference on Artificial Intelligence Circuits and Systems (AICAS).
+
+More information on the different options can be found [here](https://arxiv.org/abs/1812.05705). 
+
 
 ## Getting Started
 

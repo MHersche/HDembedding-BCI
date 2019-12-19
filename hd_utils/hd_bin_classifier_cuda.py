@@ -9,6 +9,7 @@ import torch
 from lsh import lsh
 from sklearn.svm import LinearSVC,SVC
 from nn_trainer3 import proj_trainer_end_end
+from sklearn.svm import LinearSVC
 
 __author__ = "Michael Hersche"
 __email__ = "herschmi@ethz.ch"
@@ -26,6 +27,7 @@ class hd_classifier(lsh):
 		d: number of quantisation bits per feature => only used for 'thermometer' and 'greyish' code 
 		encoding:	'single': one single encoding (not divided in spatial dimension)
 					'spat'  : spat_dim input feature vectors which are spatialy encoded and added together (with threshold)
+					'spat_bind': spatially bind the encoded vectors. 
 		code: code used getting binary HD vector by lsh class 
 				'thermometer': thermometer code with d bits quantization
 				'greyish'    : grey code with 2 bits change between adjacent levels 
@@ -35,6 +37,7 @@ class hd_classifier(lsh):
 		sparsity: Share of zeros in random_proj_bp code 
 		learning: 'average' : Learning with assotiaive memory by averaging 
 				  'SVM'	  : learn one vector per class with SVM and transfom to HD space 
+				  'weighted_readout': Weighted Readout of HD components. 
 		n_classes: Number of classes 
 		'''
 
@@ -44,6 +47,8 @@ class hd_classifier(lsh):
 		self.encoding = encoding
 		self.spat_dim = spat_dim
 		self.learning = learning
+		self.code = code
+		self.learning = learning
 
 		# Assotiative memory (one vector per class)
 		self.ClassItem = torch.ShortTensor(self.NO_classes,self.HD_dim).zero_().to(self.device)
@@ -52,12 +57,14 @@ class hd_classifier(lsh):
 		if self.encoding == 'single': # need only one vector in single decoding 
 			self.enc_vec = torch.ShortTensor(self.HD_dim).bernoulli_().to(self.device)
 			self.transform = self.single_transform # Assign transform function 
-
 		elif self.encoding == 'spat': # need spat_dim vectors
 			self.enc_vec = torch.ShortTensor(self.HD_dim,self.spat_dim).bernoulli_().to(self.device) # bernoulli
 			self.transform = self.spat_transform 
+		elif self.encoding == 'spat_bind': 
+			self.enc_vec = torch.ShortTensor(self.HD_dim,self.spat_dim).bernoulli_().to(self.device) # bernoulli
+			self.transform = self.spat_bind_transform 
 		else:
-			raise ValueError('Invalid encoding value. Got ' +self.encoding + ' and expected one of spat/single') 
+			raise ValueError('Invalid encoding value. Got ' +self.encoding + ' and expected of spat or single') 
 
 		if learning == 'SVM': 
 			self.fit = self.svm_fit 
@@ -65,8 +72,13 @@ class hd_classifier(lsh):
 			self.fit = self.fit_learn_proj_sgd
 		elif code == 'learn_HD_proj_ls':
 			self.fit = self.fit_learn_ls
-		else: 
+		# elif code == 'learn_HD_proj_unsup':
+		# 	self.fit= self.fit_learn_unsup
+		else:
 			self.fit = self.average_fit
+		
+
+
 
 
 		# permutation vector for cyclic shift by one bit 
@@ -86,7 +98,7 @@ class hd_classifier(lsh):
 
 		'''	
 		samples,labels = self.flatten_samples(samples,labels)
-				
+
 		# place holder for Assotiative memory 
 		ClassItem = torch.ShortTensor(self.NO_classes,self.HD_dim).zero_().to(self.device)
 		
@@ -127,7 +139,7 @@ class hd_classifier(lsh):
 		# transform learned vectors to HD 
 		for clas in range(self.NO_classes): 
 			coef = clf.coef_[clas]
-			if self.encoding =='spat':
+			if self.encoding =='spat' or self.encoding=='spat_bind':
 				coef = coef.reshape(self.spat_dim,-1)
 			self.ClassItem[clas],_ = self.transform(coef,clipping = True)
 
@@ -153,7 +165,7 @@ class hd_classifier(lsh):
 
 		self.average_fit(samples, labels)
 
-
+	
 	def fit_learn_ls(self,samples,labels,n_iter = 0): 
 		'''	Training of HD classifier with LS training 
 		Parameters
@@ -194,9 +206,10 @@ class hd_classifier(lsh):
 		
 
 
+
 	def flatten_samples(self,samples,labels):
 
-		if self.encoding == 'spat':
+		if self.encoding == 'spat' or self.encoding== 'spat_bind':
 			# flatten all temporal windows 
 			_,temp_dim,spat_dim,N_feat = samples.shape
 			samples = samples.reshape(-1,spat_dim,N_feat)
@@ -287,7 +300,7 @@ class hd_classifier(lsh):
 		cnt: number of additions, (here = 1)
 		'''	
 		#self.get_statistics(sample)
-		hd_vec = self.encode(sample)
+		hd_vec = self.encode(sample,band=0)
 		#if self.code == 'thermometer':
 		bound_vec = self.xor(self.enc_vec,hd_vec)
 		#else:
@@ -296,6 +309,7 @@ class hd_classifier(lsh):
 
 		return bound_vec, cnt 
 
+	
 	def spat_transform(self,sample, clipping=True): 
 		'''	encode real feature vector to binary vector with spatial encoder 
 		Parameters
@@ -312,12 +326,32 @@ class hd_classifier(lsh):
 		hd_vec = torch.ShortTensor(self.HD_dim).zero_().to(self.device)
 		# transform every spatial dimension and add together 
 		for item in range(self.spat_dim): 
-			hd_vec.add_(self.xor(self.enc_vec[:,item],self.encode(sample[item])))
+			hd_vec.add_(self.xor(self.enc_vec[:,item],self.encode(sample[item],band=item)))
 		if clipping: 
 			# do thresholding 
 			return (hd_vec > int(self.spat_dim / 2)).short(), 1 
 		else:
 			return hd_vec, self.spat_dim  
+
+	def spat_bind_transform(self,sample, clipping=True): 
+		'''	encode real feature vector to binary vector with spatial - binding encoder 
+		Parameters
+		----------
+		samples: feature sample, numpy array shape (N_feat)
+		clipping: not supported here, allways clipped 
+		
+		Return  
+		------
+		bound_vec: transformed vector, torch Short Tensor shape(HD_dim)
+		cnt: number of additions
+		'''	
+		#self.get_statistics(sample)
+		hd_vec = torch.ShortTensor(self.HD_dim).zero_().to(self.device)
+		# transform every spatial dimension and add together 
+		for item in range(self.spat_dim): 
+			hd_vec= self.xor(hd_vec,self.xor(self.enc_vec[:,item],self.encode(sample[item],band=item)))
+		
+		return hd_vec, 1 
 
 	def thresh_item(self,Item,NO_item,item_count,dim,add_dim=0):
 		'''	Thresholding of items, if even number we add random vector for breaking ties 
@@ -412,5 +446,8 @@ class hd_classifier(lsh):
 
 		return dist 
 
+	def lda_featselect(self,X,y):
 
-	
+		# generate feature indexes 
+		clf_LDA = lda_multires(solver='lsqr',shrinkage='auto',precision=64)
+		clf_LDA.fit(X,y)

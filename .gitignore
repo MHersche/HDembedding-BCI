@@ -1,0 +1,14 @@
+NewTests/*
+dataset/3classMI/S*/*.npz
+plots/*
+dataset/IV2a/*
+bci_conda/*
+__pycache__/*
+*/__pycache__/*
+*results/*
+*.ods
+*.npz
+*.txt
+*.png
+dataset/.~lock.lda.ods#
+
