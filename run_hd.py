@@ -1,3 +1,22 @@
+#*----------------------------------------------------------------------------*
+#* Copyright (C) 2020 ETH Zurich, Switzerland                                 *
+#* SPDX-License-Identifier: Apache-2.0                                        *
+#*                                                                            *
+#* Licensed under the Apache License, Version 2.0 (the "License");            *
+#* you may not use this file except in compliance with the License.           *
+#* You may obtain a copy of the License at                                    *
+#*                                                                            *
+#* http://www.apache.org/licenses/LICENSE-2.0                                 *
+#*                                                                            *
+#* Unless required by applicable law or agreed to in writing, software        *
+#* distributed under the License is distributed on an "AS IS" BASIS,          *
+#* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+#* See the License for the specific language governing permissions and        *
+#* limitations under the License.                                             *
+#*                                                                            *
+#* Authors: Michael Hersche                     							  *
+#*----------------------------------------------------------------------------*
+
 #!/usr/bin/env python3
 
 ''' 
@@ -10,17 +29,17 @@ import sys, os
 from main_hd import Hd_model
 
 DATA_PATH = './dataset/'
-SAVE_FOLDER ='01_weighted/'
-DATASET = "3classMI" # {IV2a,3classMI}
-LOAD_FEATURES = False
+SAVE_FOLDER ='03_SVM_sparsity/'
+DATASET = "IV2a" # {IV2a,3classMI}
+LOAD_FEATURES = True
 SAVE_FEATURES = False
 
 CROSSVAL = False
-CLASSIFIER = 'weighted_readout'# {'assotiative', 'kmeans','weighted_readout', 'knn'}
+CLASSIFIER = 'assotiative'# {'assotiative', 'kmeans','weighted_readout', 'knn'}
 # number of centroids if kmeans classifier 
 k = [2]#5,10,15,20,25]
 # GPU device, if not supported takes automaically cpu 
-CUDA_DEVICE = 'cuda:0' # 
+CUDA_DEVICE = 'cpu' # 
 # Feature 
 feat_type = ['Riemann']# {"Riemann","Riemann_Euclid","Whitened_Euclid","CSP"}
 # HD embedding 
@@ -30,9 +49,9 @@ code =['random_proj_bp']#{'random_proj_bp_sep','learn_HD_proj_SGD','learn_HD_pro
 # number of bits per value in thermometer and grey coding => HD dimension = N_feat_per_band * d
 
 # sparsity in bipolar random projection 
-sparsity = [0.9]#
-encoding = ['spat'] #{'spat','single','spat_bind'}
-learning = ['average'] # {'SVM','average'}
+sparsity = [0.9] # 0.95,0.96,0.97,0.98,0.99]#
+encoding = ['single'] #{'spat','single','spat_bind'}
+learning = ['SVM'] # {'SVM','average'}
 
 # LDA 
 lda_svm_precision = 2
@@ -46,7 +65,7 @@ if DATASET == "IV2a":
 		N_feat_per_band = {'single': 216,'spat':24,'spat_bind':24} 
 	else: 
 		N_feat_per_band = {'single':10879,'spat':253,'spat_bind':253} 
-	HD_dim_vec2 = [500,1000,5000,10000,10879]#,50000,100000]#,100000]#,
+	HD_dim_vec2 = [5000,10000,10879,50000,100000]#,100000]#,
 	# HD dimensions: depending on embedding different vector is taken 
 	HD_dim_vec1 = [500,1000,2000,5000,10000]#
 	#HD_dim_vec2 = [10879]
@@ -107,7 +126,7 @@ for test_iter in test_iter_vec:
 									model.N_feat_per_band = N_feat_per_band[model.encoding]
 									for model.HD_dim in HD_dim_vec[model.code]: 
 										for model.sparsity in sparsity:
-											model.save_path = SAVE_PATH +model.code+'D='+str(model.HD_dim)+'k='+str(model.k)+'Itr='+str(test_iter)
+											model.save_path = SAVE_PATH +model.code+'D='+str(model.HD_dim)+'k='+str(model.k)+'sparsity='+str(model.sparsity)+'Itr='+str(test_iter)
 											model.run()
 											result_nr += 1 
 

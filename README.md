@@ -1,7 +1,9 @@
+Copyright (C) 2020 ETH Zurich, Switzerland. SPDX-License-Identifier: Apache-2.0. See LICENSE file for details.
+
 # Exploring Embedding Methods in Binary Hyperdimensional Computing: A Case Study for Motor-Imagery based Brain–Computer Interfaces
 
-If this code proves useful for your research, please cite
-> Michael Hersche, Luca Benini, Abbas Rahimi, "Binary Models for Motor-Imagery Brain–Computer Interfaces: Sparse Random Projection and Binarized SVM", in 2020 IEEE International Conference on Artificial Intelligence Circuits and Systems (AICAS).
+If this code proves useful for your research, please cite our [paper](https://ieeexplore.ieee.org/abstract/document/9073968).
+> Michael Hersche, Luca Benini, Abbas Rahimi, "Binary Models for Motor-Imagery Brain–Computer Interfaces: Sparse Random Projection and Binarized SVM", 2020 2nd IEEE International Conference on Artificial Intelligence Circuits and Systems (AICAS), Genova, Italy, 2020, pp. 163-167.
 
 More information on the different options can be found [here](https://arxiv.org/abs/1812.05705). 
 
@@ -36,3 +38,6 @@ python3 run_hd.py
 ## Author
 
 * **Michael Hersche** - *Initial work* - [MHersche](https://github.com/MHersche)
+
+## License
+Please refer to the LICENSE file for the licensing of our code.

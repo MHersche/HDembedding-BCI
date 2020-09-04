@@ -1,3 +1,22 @@
+#*----------------------------------------------------------------------------*
+#* Copyright (C) 2020 ETH Zurich, Switzerland                                 *
+#* SPDX-License-Identifier: Apache-2.0                                        *
+#*                                                                            *
+#* Licensed under the Apache License, Version 2.0 (the "License");            *
+#* you may not use this file except in compliance with the License.           *
+#* You may obtain a copy of the License at                                    *
+#*                                                                            *
+#* http://www.apache.org/licenses/LICENSE-2.0                                 *
+#*                                                                            *
+#* Unless required by applicable law or agreed to in writing, software        *
+#* distributed under the License is distributed on an "AS IS" BASIS,          *
+#* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.   *
+#* See the License for the specific language governing permissions and        *
+#* limitations under the License.                                             *
+#*                                                                            *
+#* Authors: Michael Hersche                                                   *
+#*----------------------------------------------------------------------------*
+
 #!/usr/bin/env python3
 
 ''' 
@@ -20,7 +39,7 @@ __email__ = "herschmi@ethz.ch"
 
 
 
-def load_feature_IV2a(data_path,subject, twind_sel,band_sel,feat_type='Riemann', encoding='spat', split = 0, nsplits = 4,save_features=False,load_features=False):
+def load_feature_IV2a(data_path,subject, twind_sel=[],band_sel=[],feat_type='Riemann', encoding='spat', split = 0, nsplits = 4,save_features=False,load_features=False):
 	'''	returns features and labels of training and test set 
 
 	Keyword arguments:
@@ -73,7 +92,8 @@ def load_feature_IV2a(data_path,subject, twind_sel,band_sel,feat_type='Riemann',
 			#test_feat = test_feat[np.ix_(np.arange(N_ev_trial),twind_sel,band_sel)].reshape(N_ev_trial,N_twind,N_bands,22,22)
 			# transform covmat to vector
 			#train_feat, test_feat = transform_covmat(train_feat,test_feat)
-			N_feat = 253
+			band_sel = np.arange(43)
+			N_twind = np.array([0])
 
 
 	else: # generate new features 
