@@ -31,7 +31,7 @@ from main_hd import Hd_model
 DATA_PATH = './dataset/'
 SAVE_FOLDER ='03_SVM_sparsity/'
 DATASET = "IV2a" # {IV2a,3classMI}
-LOAD_FEATURES = True
+LOAD_FEATURES = False
 SAVE_FEATURES = False
 
 CROSSVAL = False
