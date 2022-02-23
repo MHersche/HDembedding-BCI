@@ -92,6 +92,8 @@ elif DATASET =='3classMI':
 	#d=[5,9,37,75,369,737]
 	#d = [13]
 	d=[2]
+	
+os.makedirs(SAVE_PATH, exist_ok=True)
 ############################################################
 
 model = Hd_model(DATASET,DATA_PATH,CROSSVAL,CLASSIFIER,CUDA_DEVICE,lda_svm_precision,SAVE_FEATURES,LOAD_FEATURES)
